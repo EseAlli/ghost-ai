@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 
 type DialogRootProps = ComponentProps<typeof Dialog>;
+type DialogContentProps = ComponentProps<typeof DialogContent>;
 
 interface EditorDialogProps {
   open?: DialogRootProps["open"];
@@ -26,6 +27,8 @@ interface EditorDialogProps {
   footer?: ReactNode;
   children?: ReactNode;
   className?: string;
+  /** Element to focus when the dialog opens. */
+  initialFocus?: DialogContentProps["initialFocus"];
 }
 
 /**
@@ -42,11 +45,13 @@ export function EditorDialog({
   footer,
   children,
   className,
+  initialFocus,
 }: EditorDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger ? <DialogTrigger render={trigger} /> : null}
       <DialogContent
+        initialFocus={initialFocus}
         className={cn(
           "gap-5 rounded-3xl border border-surface-border bg-elevated p-6 text-copy-primary ring-0 sm:max-w-md",
           className
