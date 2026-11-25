@@ -4,11 +4,11 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Phase
 
-- Authentication (complete)
+- Project dialogs (complete — pending manual browser check)
 
 ## Current Goal
 
-- Awaiting the next feature spec.
+- Manually verify Feature 04 in the browser, then await the next feature spec.
 
 ## Completed
 
@@ -27,10 +27,19 @@ Update this file whenever the current phase, active feature, or implementation s
   - [x] `app/editor/page.tsx` (minimal) calls `auth.protect()` and mounts `EditorWorkspace` (navbar + project sidebar); `loading.tsx` added for Cache Components.
   - [x] Clerk `UserButton` in the editor navbar right section (default menu/profile flows).
   - [x] `npm run build` passes; eslint clean.
+- Feature 04: Project dialogs (mock data only, no API/persistence)
+  - [x] `components/editor/editor-home.tsx` — centered heading, description and `New Project` (`Plus`) button on `/editor`, no card wrapper; opens the Create dialog.
+  - [x] `hooks/use-project-dialogs.ts` — owns dialog state (`activeDialog`, `targetProject`), form state (`name`, derived `slug`) and loading state (`isSubmitting`); mutations go to `onCreate`/`onRename`/`onDelete` handlers so API calls can be added later.
+  - [x] `components/editor/project-dialogs.tsx` — Create (name input + live slug preview), Rename (prefilled, current name in description, auto-focused via `initialFocus`, Enter submits), Delete (confirmation only, `destructive` button).
+  - [x] `components/editor/project-sidebar.tsx` — lists projects from props; Rename/Delete icon actions only on owned projects (always visible on mobile, on hover/focus from `md`); none on Shared; mobile-only backdrop scrim closes the sidebar on tap.
+  - [x] Slug validation on Create (`validateSlug` in `lib/slug.ts`): slug must be non-empty, at most `SLUG_MAX_LENGTH` (50) characters, and not already used by another project. The error shows under the slug preview, the input gets `aria-invalid`, and Create stays disabled.
+  - [x] `EditorDialog` gained an optional `initialFocus` passthrough.
+  - [x] `types/project.ts` (`Project`, `ProjectRole`), `lib/slug.ts` (`slugify`), `lib/mock-projects.ts` (3 mock projects: 2 owned, 1 shared). The workspace keeps the list in in-memory state (resets on reload).
+  - [x] `tsc --noEmit` clean; eslint clean; `npm run build` passes.
 
 ## In Progress
 
-- None.
+- None. Feature 04 still needs a click-through in a signed-in browser session (not yet done).
 
 ## Next Up
 
@@ -46,6 +55,8 @@ Update this file whenever the current phase, active feature, or implementation s
 - Route protection: `proxy.ts` protects all non-auth routes by default (per spec), without the deprecated `createRouteMatcher`. Pages also call `auth.protect()` themselves as defence in depth, per Clerk v7 guidance.
 
 ## Session Notes
+
+- Feature 04: renaming a project keeps its original slug; the spec does not say rename should regenerate it. Slug uniqueness is checked only against the in-memory list; the server must enforce it too once persistence lands. The 50-character slug limit was chosen by the AI because the spec gives no limit; confirm or change it.
 
 - `/editor` now mounts the navbar + sidebar via `components/editor/editor-workspace.tsx` (needed as the post-auth redirect target); canvas is still to come in a later spec.
 - Sidebar sits at `top-16` to clear the `h-14` navbar; keep these in sync if the navbar height changes.

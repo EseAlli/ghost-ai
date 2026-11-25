@@ -1,0 +1,23 @@
+import type { Project } from "@/types/project";
+
+/** Placeholder projects until project persistence is implemented. */
+export const MOCK_PROJECTS: Project[] = [
+  {
+    id: "mock-project-1",
+    name: "Payments Platform",
+    slug: "payments-platform",
+    role: "owner",
+  },
+  {
+    id: "mock-project-2",
+    name: "Realtime Chat Service",
+    slug: "realtime-chat-service",
+    role: "owner",
+  },
+  {
+    id: "mock-project-3",
+    name: "Analytics Pipeline",
+    slug: "analytics-pipeline",
+    role: "collaborator",
+  },
+];
