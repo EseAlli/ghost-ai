@@ -4,11 +4,11 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Phase
 
-- Project dialogs (complete — pending manual browser check)
+- Feature 05: Prisma data layer (complete)
 
 ## Current Goal
 
-- Manually verify Feature 04 in the browser, then await the next feature spec.
+- Manually verify Feature 04 in the browser, then await the next feature spec (wiring the project dialogs to the database).
 
 ## Completed
 
@@ -36,6 +36,12 @@ Update this file whenever the current phase, active feature, or implementation s
   - [x] `EditorDialog` gained an optional `initialFocus` passthrough.
   - [x] `types/project.ts` (`Project`, `ProjectRole`), `lib/slug.ts` (`slugify`), `lib/mock-projects.ts` (3 mock projects: 2 owned, 1 shared). The workspace keeps the list in in-memory state (resets on reload).
   - [x] `tsc --noEmit` clean; eslint clean; `npm run build` passes.
+- Feature 05: Prisma (Prisma 8 RC: `prisma` 8.0.0-rc.35, `@prisma/orm-postgres` 8.0.0-rc.25; kept at the user's request instead of the Prisma 7 setup the spec assumed)
+  - [x] `prisma/models/project.prisma` (Prisma 8 PSL contract). `Project`: `id` (uuid v7, client-generated), `ownerId` (Clerk user ID), `name`, optional `description`, `status` (`ProjectStatus` enum: `DRAFT`, `ARCHIVED`; enforced by a CHECK constraint), optional `canvasJsonPath`, `createdAt`/`updatedAt`; indexes on `ownerId` and `createdAt`. `ProjectCollaborator`: `id`, `projectId` → `Project` (`onDelete: Cascade`), `email`, `createdAt`; unique `(projectId, email)`; indexes on `email` and `(projectId, createdAt)`. `Project.collaborators` back-relation (no column).
+  - [x] `prisma.config.ts` points at the contract, emits to `prisma/generated/` (`contract.json`, `contract.d.ts`) and loads `.env.local` then `.env`.
+  - [x] `lib/prisma.ts` exports one `prisma` client, cached on `globalThis` outside production. A `prisma+postgres://` (Accelerate) URL throws a clear error, because Prisma 8 has no Accelerate client. Any other URL uses the direct `postgres()` runtime, which builds a `pg` pool.
+  - [x] First migration `migrations/app/20261125T2034_init` planned (`prisma migration plan --name init`) and applied to the Prisma Postgres dev database (`prisma db migrate`). `prisma db verify`: marker and schema match the contract. A read-only query through `lib/prisma.ts` returned rows.
+  - [x] `tsc --noEmit` clean; eslint clean; `npm run build` passes.
 
 ## In Progress
 
@@ -49,12 +55,22 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Auth spec assumed sign-in/sign-up URL env vars already existed; they did not. Added Clerk's standard `NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in` and `NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up` to `.env.local` (code falls back to the same paths). Confirm these are set in every deployment environment.
 
+- Spec 05 asked for Accelerate when `DATABASE_URL` starts with `prisma+postgres://`. Prisma 8 cannot do this; that branch now throws. Decide whether Accelerate is needed. If it is, either move to Prisma 7 or wait for Prisma 8 support.
+- Spec 05 asked for `@prisma/adapter-pg`, but that is a Prisma 7 driver adapter; Prisma 8 connects through `pg` itself. `@prisma/client` 7.10.1 and `@prisma/adapter-pg` 7.10.1 are still in `package.json` but unused. Decide whether to remove them.
+- `status` has no database default; callers must set it (e.g. `DRAFT` on create). Confirm or add `@default`.
+- `app/generated/prisma/` (the Prisma 8 init sample with User/Post models) and `prisma-8.md` (its README) are no longer used. `app/generated` is excluded in `tsconfig.json` so the build passes. Delete both, then remove the exclude.
+
 ## Architecture Decisions
+
+- Database: Prisma 8 RC (contract-first), not Prisma 7. Contract source is `prisma/models/project.prisma`; emitted artifacts are in `prisma/generated/`; migrations are in `migrations/app/` (commit all three). Workflow: edit the contract → `npm run contract:emit` → `npx prisma migration plan --name <slug>` → `npx prisma db migrate`. Prisma 8 has no `generate` or `migrate dev`. Queries use `prisma.orm.public.<Model>`.
+- Prisma 8 automatically adds a separate index on the FK column `ProjectCollaborator.projectId`, on top of the indexes the spec asked for.
 
 - Fonts: Geist Sans/Mono via `next/font` is verified as the computed font on the auth pages, including inside Clerk components (`fontFamily: var(--font-geist-sans)`, `fontSize: 0.9375rem`).
 - Route protection: `proxy.ts` protects all non-auth routes by default (per spec), without the deprecated `createRouteMatcher`. Pages also call `auth.protect()` themselves as defence in depth, per Clerk v7 guidance.
 
 ## Session Notes
+
+- Feature 05: `.env.local` had the key misspelled as `DATABSE_URL`; renamed to `DATABASE_URL` with the user's approval. Set `DATABASE_URL` in every deployment environment too.
 
 - Feature 04: renaming a project keeps its original slug; the spec does not say rename should regenerate it. Slug uniqueness is checked only against the in-memory list; the server must enforce it too once persistence lands. The 50-character slug limit was chosen by the AI because the spec gives no limit; confirm or change it.
 
